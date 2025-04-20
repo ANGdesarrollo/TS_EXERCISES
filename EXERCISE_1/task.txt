@@ -1,0 +1,24 @@
+Etapa 1: Pensar asincrónicamente
+Objetivo: Romper el pensamiento “lineal” y meterse con async/await, streams y callbacks.
+
+Ejercicio 1: Crear un CLI que reciba un nombre de archivo y descargue un archivo desde internet a una carpeta local.
+
+Usa node-fetch o axios.
+
+Guarda con fs.writeFile.
+
+Manejá errores.
+
+Mostrá progreso.
+
+Ejercicio 2: Escalalo a 10 archivos (con una lista).
+
+Ejecutalos en paralelo usando Promise.all.
+
+Agregá un delay entre algunos.
+
+Ejercicio 3: Control de concurrencia.
+
+Bajá 100 archivos pero solo 5 al mismo tiempo.
+
+Usá una cola con p-limit o armala vos.
