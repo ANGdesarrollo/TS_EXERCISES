@@ -1,137 +1,144 @@
-# 🧠 Etapa 1: Dominando la asincronía y gestión de descargas en Frontend como un Senior
+# 🧠 Etapa 1: Dominando la asincronía en Frontend como un Senior
 
 **Objetivo general:**
-Construir aplicaciones web que descargan y gestionan archivos en el navegador, manejando asincronía, streams, concurrencia y UI de progreso de forma escalable y mantenible.
+Adquirir criterio técnico real para enfrentar escenarios asincrónicos en aplicaciones web, entendiendo métodos de carga, streams en el navegador, control de concurrencia y experiencia de usuario durante operaciones complejas.
 
 **Al completar esta etapa, podrás:**
-- Elegir entre buffer vs. stream en el navegador.
-- Controlar concurrencia y backpressure en fetch.
-- Mostrar barras de progreso e indicadores de estado en la UI.
-- Manejar errores (red, disco virtual, límites de API) y reintentos.
+- Construir interfaces responsivas que no se bloquean en operaciones largas.
+- Implementar feedback visual (spinners, barras de progreso, placeholders).
+- Manejar peticiones paralelas, lazy loading y cancelaciones.
+- Controlar concurrencia, gestionar rate limiting y backpressure con Fetch API.
+- Ofrecer UX robusta ante errores, timeouts y cambios en la conectividad.
+
+📌 *Esta etapa está pensada para ejercitar la cabeza, no solo los dedos.*
 
 ---
 
-## 📂 Ejercicio 1: Descarga básica con Fetch y Blob
+## 📂 Ejercicio 1: Carga de un recurso con feedback visual
 
 ### 🎯 Objetivo
-Descargar un único archivo desde una URL concreta y ofrecerlo para guardar en el navegador, con UI mínima de progreso.
+Crear una interfaz sencilla que descargue un recurso pesado y muestre al usuario el estado de la operación.
 
 ### ✍️ Instrucciones
-1. Crea una página web o componente (p.ej. React/Vue) con un input de URL y un botón “Descargar”.
-2. Al hacer clic, usa `fetch(url)` para:
-    - Seguir redirecciones (comportamiento por defecto).
-    - Soportar **Basic Auth** enviando cabeceras `Authorization` si hay credenciales.
-3. Llama a `response.blob()` y crea un enlace `<a download>` con `URL.createObjectURL(blob)` para iniciar la descarga.
-4. En la UI, muestra un spinner o mensaje “Descargando…” hasta completar.
+1. Crea una página HTML + CSS + JavaScript (vanilla o framework ligero).
+2. Añade un botón “Cargar recurso”. Al hacer clic:
+    - Inicia `fetch(url)` a `https://picsum.photos/3000/2000` (imagen) o `https://jsonplaceholder.typicode.com/photos` (JSON).
+    - Usa `AbortController` para timeout a 10 s.
+    - Mientras descarga, muestra un spinner o mensaje “Cargando…”.
+3. Cuando termine:
+    - Si es imagen, muestra la imagen en la página.
+    - Si es JSON, muestra el número de objetos recibidos.
+4. Muestra mensajes de error según el código HTTP o timeout.
 
 ### 🔍 Puntos a cubrir
-- ¿Cómo indicas al usuario un **401** o un error de red?
-- ¿Qué UX ofreces si la descarga tarda mucho?
+- Implementación de timeout con `AbortController`.
+- No bloquear el hilo principal.
+- UX de error: diferenciar 401, 404, 500 y timeout.
 
 ### ❓ Reflexión
-> ¿Por qué elegiste Blob vs. streams directos para esta primera implementación?
+> ¿Qué diferencias observaste entre `XMLHttpRequest` y `fetch` al manejar estados de carga?
 
 ---
 
-## 📂 Ejercicio 2: Descarga paralela con indicadores por archivo
+## 📂 Ejercicio 2: Galería paralela con placeholders
 
 ### 🎯 Objetivo
-Extender la UI para gestionar múltiples descargas simultáneas, cada una con su propio estado y progreso.
+Construir una galería que cargue múltiples imágenes en paralelo mostrando su progreso individual.
 
 ### ✍️ Instrucciones
-1. Permite al usuario introducir una lista de **al menos 5 URLs** (textarea o inputs dinámicos).
-2. Al iniciar, lanza todas las descargas con `Promise.allSettled`.
-3. Por cada archivo, muestra en una lista: nombre (URL), estado (descargando, éxito, error) y tiempo transcurrido.
-4. Si falla alguno, muestra el error y deja los demás descargando.
+1. Crea un grid que acepte 20 URLs de imágenes (pueden ser de `picsum.photos`).
+2. Para cada URL:
+    - Renderiza un placeholder (cuadro gris).
+    - Lanza la descarga con `fetch` y `.blob()`.
+    - Al finalizar, crea un object URL y asigna `src` a un `<img>`.
+    - Si falla, muestra un ícono de error.
+3. Muestra un contador global (“5/20 cargadas”) y el tiempo total.
+4. Permite al usuario cancelar una descarga específica con `AbortController`.
 
 ### 🔍 Puntos a cubrir
-- ¿Cómo actualizas el estado en el DOM de forma eficiente?
-- ¿Cómo cancelas una descarga en curso (AbortController)?
+- Actualización eficiente del DOM.
+- Control de cancelación y liberación de recursos (`URL.revokeObjectURL`).
 
 ### ❓ Reflexión
-> ¿Qué ventajas te da manejar estados por archivo en lugar de un mensaje global?
+> ¿Cuándo conviene usar `Promise.all` vs. descargas individuales con `Promise.race`?
 
 ---
 
-## 📂 Ejercicio 2.5: Streams y progreso en tiempo real
+## 📂 Ejercicio 2.5: Lazy loading y optimización de scroll
 
 ### 🎯 Objetivo
-Usar la API de streams de Fetch para mostrar progreso real de la descarga.
+Implementar carga perezosa de imágenes según su visibilidad en pantalla.
 
 ### ✍️ Instrucciones
-1. Reemplaza `response.blob()` por un lector de stream:
-   ```js
-   const reader = response.body.getReader();
-   const contentLength = +response.headers.get('Content-Length');
-   let received = 0;
-   const chunks = [];
-   while(true) {
-     const { done, value } = await reader.read();
-     if (done) break;
-     chunks.push(value);
-     received += value.length;
-     updateProgress(received / contentLength);
-   }
-   const blob = new Blob(chunks);
-   ```  
-2. En la interfaz, dibuja una barra de progreso que refleje `updateProgress()`.
+1. A partir de la galería anterior, usa `IntersectionObserver` para detectar elementos cerca del viewport.
+2. Solo al detectarlos, inicia `fetch` y reemplaza el placeholder.
+3. Implementa carga progresiva: baja resolución primero y luego alta.
+4. Cancela peticiones si el usuario hace scroll rápido y el elemento sale del viewport.
 
 ### 🔍 Puntos a cubrir
-- ¿Cómo reaccionas si `Content-Length` es `null`?
-- ¿Qué sucede si la escritura de chunks es más lenta que la llegada de datos?
+- Impacto en el tiempo de carga inicial.
+- Mecanismo de cancelación con `AbortController`.
 
 ### ❓ Reflexión
-> ¿Cómo cambian las consideraciones de memoria cuando manejas streams en el navegador?
+> ¿Cómo afectaría esta técnica a un feed infinito (infinite scroll)?
 
 ---
 
-## 📂 Ejercicio 3: Control de concurrencia y UI de rate limiting
+## 📂 Ejercicio 3: Autocompletado con debounce y throttling
 
 ### 🎯 Objetivo
-Descargar 20 recursos, limitando a **5 descargas simultáneas**, mostrando un dashboard de estados.
+Crear un campo de búsqueda que consulte una API y ofrezca sugerencias en tiempo real, respetando límites de peticiones.
 
 ### ✍️ Instrucciones
-1. Simula 20 URLs (p.ej. imágenes de placeholder).
-2. Implementa un gestor de concurrencia en frontend (p.ej. [`p-limit`](https://www.npmjs.com/package/p-limit) adaptado o tu propio pool).
-3. Muestra en pantalla un grid o tabla con cada archivo y su estado: pendiente, descargando, éxito, error.
-4. Añade un retraso configurable (p.ej. slider UI) para pausar entre descargas y simular límites de API.
+1. Usa una API pública (p.ej. OpenLibrary Search).
+2. Al escribir en un input:
+    - Aplica debounce de 300 ms (p.ej. con `lodash.debounce`).
+    - Cancela la petición anterior al iniciar una nueva.
+    - Limita a 3 peticiones concurrentes; en exceso, encola las solicitudes.
+3. Muestra debajo del input una lista de sugerencias.
+4. Implementa caché en memoria para consultas repetidas.
 
 ### 🔍 Puntos a cubrir
-- ¿Cómo actualizas la UI sin bloquear el hilo principal?
-- ¿Cómo manejas HTTP 429 y reintentos automáticos?
+- Debounce vs. throttle: cuándo usar cada uno.
+- Gestión de colas simples en frontend.
 
 ### ❓ Reflexión
-> ¿En qué escenarios de frontend real esto te sería útil? (p.ej. descargar lotes de assets en PWA)
+> ¿Cómo mejorarías la UX si la API aplica rate limiting (429)?
 
 ---
 
-## 🚀 Ejercicio 4 (final): SPA completa con configuración y reporting
+## 🚀 Ejercicio 4: SPA con gestión avanzada de estados
 
 ### 🎯 Objetivo
-Crear una **Single Page App** que unifique configuración, descargas por streams, concurrencia y reporte visual.
+Desarrollar una mini-aplicación que unifique lo aprendido: descargas, concurrencia, caché y UX de errores.
 
 ### ✍️ Instrucciones
-1. Carga un `config.json` desde tu servidor con:
-    - Lista de URLs.
-    - Concurrencia máxima.
-    - Retrasos y reintentos.
-2. Por cada URL:
-    - Descarga usando streams y muestra barra de progreso.
-    - Maneja reintentos en caso de fallo (hasta 2 veces).
-3. Al terminar todas, muestra un **dashboard** con:
-    - Gráficos de tiempos (usando Chart.js o Recharts).
-    - Tabla de detalles (URL, estado, tiempo, intentos).
-4. Permite exportar el reporte como CSV o JSON desde la UI.
+1. Elige un framework ligero (Vue, React o vanilla modular) y crea una SPA de “Biblioteca de películas”:
+    - Listado paginado desde TMDB u OMDB.
+    - Búsqueda en tiempo real con autocompletado.
+    - Vista de detalle que carga datos adicionales bajo demanda.
+2. Implementa:
+    - Caché con TTL.
+    - Precarga inteligente (prefetch) de rutas o datos.
+    - Estados visuales: loading, error, empty, success.
+    - Reintentos automáticos con backoff exponencial.
+3. Añade opción de exportar resultados a CSV o JSON.
 
 ### 🔍 Puntos a cubrir
-- Arquitectura modular: servicios de descarga, componentes de UI, utilidades de reporting.
-- Uso de Web Workers si la UI se torna lenta.
+- Arquitectura de manejo centralizado de peticiones (servicio/API client).
+- Uso de Web Workers si la UI sufre bloqueos.
+- Estrategias offline: Service Worker o caché local.
 
 ### ❓ Reflexión
-> ¿Cómo mejorarías la UX si el usuario abandona la página a mitad de descargas?  
-> ¿Podrías soportar resuming de descargas parciales?
+> ¿Cómo diseñarías un mecanismo de resumir descargas si la sesión del usuario se interrumpe?
 
 ---
 
-Con estos cambios, la etapa 1 está totalmente orientada al **frontend**, complementando la gestión de descargas con una experiencia de usuario sólida y técnicas avanzadas de asincronía en el navegador.
+## 📚 Recursos útiles
+- [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+- [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
+- [IntersectionObserver](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API)
+- [Lodash Debounce/Throttle](https://lodash.com/docs/#debounce)
+- [Service Workers](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API)
+- [Performance API](https://developer.mozilla.org/en-US/docs/Web/API/Performance_API)
 
