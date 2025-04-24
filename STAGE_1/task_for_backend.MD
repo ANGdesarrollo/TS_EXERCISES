@@ -20,16 +20,14 @@ Descargar un único archivo desde una URL concreta y guardar localmente, gestion
 
 ### ✍️ Instrucciones
 1. Crea un CLI `my-downloader` que reciba:
-    * URL de ejemplo: `https://speed.hetzner.de/100MB.bin`
+    * URL de ejemplo: `https://nbg1-speed.hetzner.com/100MB.bin`
     * Ruta destino (opcional, por defecto `./downloads`).
 2. Usa `node-fetch` o `axios` para:
     * Seguir redirecciones (`maxRedirects`).
-    * Soportar **autenticación básica** (añade flag `--auth user:pass`).
 3. Descarga el contenido con `.arrayBuffer()` o `.buffer()`.
 4. Guarda con `fs.writeFile`, manejando errores de red y disco.
 
 ### 🔍 Puntos a cubrir
-* ¿Cómo reaccionas si recibes un **301** o un **401**?
 * Devuelve código de salida ≠ 0 en caso de fallo.
 
 ### ❓ Reflexión
